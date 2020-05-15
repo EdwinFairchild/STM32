@@ -1,0 +1,5 @@
+﻿  CL_delay.c
+  Linking VisualGDB/Debug/STM32G4_HAL_LL_REG...
+  ------------------- Memory utilization report -------------------
+  Used FLASH: 6140 bytes out of 32KB (18%)
+  Used SRAM: 40 bytes out of 32KB (0%)
