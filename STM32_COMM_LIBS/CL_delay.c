@@ -1,85 +1,186 @@
 
 #include "CL_delay.h"
 
-uint32_t CL_delayTicks = 0x000000;
-
-#ifdef CL_DELAY_USE_TIM2
-#define TIMER TIM2
-#endif
-
-#ifdef CL_DELAY_USE_TIM3
-#define TIMER TIM3
-#endif
-
-#ifdef CL_DELAY_USE_TIM4
-#define TIMER TIM4
-#endif
+uint32_t CL_delayTicks = 0x00000000;
 
 
-#ifdef CL_USING_G4
-void initDelay() //supports General Purpose TImers 2,3,4,
-{
+
+
+
+#ifdef CL_USING_G4 /******************************************************/
+	#ifdef CL_DELAY_USE_TIM2
+	#define TIMER TIM2
+	#define enabelTIMER()  (RCC->APB1ENR1 |= (RCC_APB1ENR1_TIM4EN))
+	#endif
+
+	#ifdef CL_DELAY_USE_TIM3
+	#define TIMER TIM3
+	#define enableTIMER()  (RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN)
+   #define enableIRQ()		(NVIC_EnableIRQ(TIM3_IRQn))
+	#endif
+  
+	#ifdef CL_DELAY_USE_TIM4
+	#define TIMER TIM4
+	#define enableTIMER()	(RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN)
+	#define enableIRQ()		(NVIC_EnableIRQ(TIM4_IRQn))
+	#endif
 #ifdef CL_delay_USE_LL
+
+void CL_delay_init() //supports General Purpose TImers 2,3,4,
+	{
+		enableTIMER();
+		enableIRQ();
+		LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM4);
+		LL_TIM_InitTypeDef myTIM; 
+		LL_TIM_StructInit(&myTIM);
 	
+		//_______________________________/ARR and prescaler depend on if micro seconds are enabled 
+	
+		#ifdef CL_DELAY_US_ENABLE
+	
+			myTIM.Autoreload  = 10;
+			myTIM.Prescaler = 17;
+	
+		#else
+
+			myTIM.Autoreload  = 1000;
+			myTIM.Prescaler = (SystemCoreClock / 1000000);
+	
+		#endif
+		//_______________________________	
+	
+	
+		LL_TIM_SetUpdateSource(TIM4, LL_TIM_UPDATESOURCE_COUNTER);     //update even will only be set by over/undeflow of counter
+		LL_TIM_EnableIT_UPDATE(TIMER);
+		//	LL_TIM_GenerateEvent_UPDATE(TIMER);	
+		LL_TIM_Init(TIMER, &myTIM);
+	}	
+
+#else //if not using LL
+
+void CL_delay_init() //supports General Purpose TImers 2,3,4,
+	{
+ 		enableTIMER();
+		enableIRQ();
+		#ifdef CL_DELAY_US_ENABLE //change prescaler for micro second delay	
+			//@@@@@@@@ NEED calculaiting 
+			TIMER->ARR = 10;
+			TIMER->PSC = 17;
+		#else
+			TIMER->PSC = 170;
+			TIMER->ARR = 1000;
+		#endif
+			TIMER->CR1 |= TIM_CR1_URS;
+			//TIMER->DIER |= TIM_DIER_UIE;
+			TIMER->EGR |= TIM_EGR_UG;  
+	}	
+#endif //CL_delay_USE_LL
+	
+
+	
+
+
+
+#endif /*********************End CL_USING_G4*************************/
+
+
+
+#ifdef CL_USING_F1 /******************************************************/
+	#ifdef CL_DELAY_USE_TIM2
+		#define TIMER TIM2
+		#define enableTIMER()  (RCC->APB1ENR |= (RCC_APB1ENR_TIM2EN))
+		#define enableIRQ()		(NVIC_EnableIRQ(TIM2_IRQn))
+	#endif
+
+	#ifdef CL_DELAY_USE_TIM3
+	#define TIMER TIM3
+	#define enableTIMER()  (RCC->APB1ENR |= RCC_APB1ENR_TIM3EN)
+    #define enableIRQ()		(NVIC_EnableIRQ(TIM3_IRQn))
+	#endif
+  
+	#ifdef CL_DELAY_USE_TIM4
+		#define TIMER TIM4
+		#define enableTIMER()	(RCC->APB1ENR |= RCC_APB1ENR_TIM4EN)
+		#define enableIRQ()		(NVIC_EnableIRQ(TIM4_IRQn))
+#endif
+
+#ifdef CL_delay_USE_LL
+
+void CL_delay_init() //supports General Purpose TImers 2,3,4,
+{
+	
+
+	enableIRQ();
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM4);
 	LL_TIM_InitTypeDef myTIM; 
 	LL_TIM_StructInit(&myTIM);
-	//maybe insert us dependant code here
+	
+	//_______________________________/ARR and prescaler depend on if micro seconds are enabled 
+	
+#ifdef CL_DELAY_US_ENABLE
+	
 	myTIM.Autoreload  = 1000;
 	myTIM.Prescaler = 170;
-		
-	LL_TIM_SetUpdateSource(TIM4, LL_TIM_UPDATESOURCE_COUNTER);    //update even will only be set by over/undeflow of counter
-	LL_TIM_EnableIT_UPDATE(TIM4);
-	//	LL_TIM_GenerateEvent_UPDATE(TIM4);	
-	LL_TIM_Init(TIM4, &myTIM);
 	
 #else
-			
-	#ifdef CL_DELAY_US_ENABLE //change prescaler for micro second delay
+
+	myTIM.Autoreload  = 1000;
+	//uint32_t  temp  = (SystemCoreClock / 1000000);
+	myTIM.Prescaler = (SystemCoreClock/1000000);
 	
-		TIMER->ARR = 170;
-	#else
-		TIMER->PSC = 170;
-		TIMER->ARR = 1000;
-	#endif
-		TIMER->CR1 |= TIM_CR1_URS;
-		TIMER->DIER |= TIM_DIER_UIE;
-		TIMER->EGR |= TIM_EGR_UG;  
+#endif
+	//_______________________________	
 	
+	
+	LL_TIM_SetUpdateSource(TIMER, LL_TIM_UPDATESOURCE_COUNTER);      //update even will only be set by over/undeflow of counter
+	LL_TIM_EnableIT_UPDATE(TIMER);
+	//	LL_TIM_GenerateEvent_UPDATE(TIMER);	
+	LL_TIM_Init(TIMER, &myTIM);
+}	
+
+#else //if not using LL
+
+void CL_delay_init() //supports General Purpose TImers 2,3,4,
+{
+	enableIRQ();
+	enableTIMER();
+	
+#ifdef CL_DELAY_US_ENABLE //change prescaler for micro second delay	
+	//@@@@@@@@ NEED calculaiting 
+	TIMER->ARR = 170;
+	TIMER->PSC = 170;
+#else
+	TIMER->PSC = 72;
+	TIMER->ARR = 1000;
+#endif
+	TIMER->CR1 |= TIM_CR1_URS;
+	TIMER->DIER |= TIM_DIER_UIE;
+	TIMER->EGR |= TIM_EGR_UG;  
+}	
 #endif //CL_delay_USE_LL
 	
-#ifdef CL_DELAY_USE_TIM2
-	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
-	NVIC_EnableIRQ(TIM2_IRQn);		
-#endif
-	
-#ifdef CL_DELAY_USE_TIM3
-	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN;
-	NVIC_EnableIRQ(TIM3_IRQn);
-#endif
-		
-#ifdef CL_DELAY_USE_TIM4
-	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN;
-	NVIC_EnableIRQ(TIM4_IRQn);
-#endif
+
 	
 
 
-}
+
+#endif /*********************End CL_USING_F1*************************/
 
 
-//-----------------------------------
 
-
+//________________________________________
 #ifdef CL_DELAY_US_ENABLE
 
 	void delayMS(uint32_t ms)
-	{
-	
-	}
+{
+	delayUS(ms * 999);
+}
 	void delayUS(uint32_t us)
 	{
-	
+		TIMER->CR1 |= TIM_CR1_CEN;
+		CL_delayTicks = 0;
+		while (CL_delayTicks < (us)) ;
+		TIMER->CR1 &= ~TIM_CR1_CEN;
 	}
 
 #else
@@ -93,6 +194,8 @@ void initDelay() //supports General Purpose TImers 2,3,4,
 	}
 
 #endif //CL_DELAY_US_ENABLE
+//___________________________________________________
+
 
 #ifdef CL_DELAY_USE_TIM2
 	void TIM2_IRQHandler(void)
@@ -119,4 +222,3 @@ void initDelay() //supports General Purpose TImers 2,3,4,
 #endif //CL_DELAY_USE_TIM4
 
 
-#endif // CL_USING_G4

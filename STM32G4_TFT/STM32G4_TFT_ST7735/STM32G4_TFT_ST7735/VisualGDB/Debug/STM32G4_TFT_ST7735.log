@@ -1,4 +1,0 @@
-﻿  CL_delay.c
-  Linking ../VisualGDB/Debug/STM32G4_TFT_ST7735...
-  c:/sysgcc/arm-eabi/bin/../lib/gcc/arm-none-eabi/9.2.1/../../../../arm-none-eabi/bin/ld.exe: VisualGDB/Debug/STM32G4_TFT_ST7735.o:F:\GoogleDrive\STM32G4_TFT\STM32G4_TFT_ST7735\STM32G4_TFT_ST7735/../../../STM32_COMM_LIBS/CL_delay.h:11: multiple definition of `CL_delayTicks'; VisualGDB/Debug/CL_delay.o:F:/GoogleDrive/STM32_COMM_LIBS/CL_delay.c:4: first defined here
-collect2.exe : error : ld returned 1 exit status

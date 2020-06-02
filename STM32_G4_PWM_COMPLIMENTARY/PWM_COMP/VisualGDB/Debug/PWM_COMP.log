@@ -1,6 +1,0 @@
-﻿  SystemClockUpdate.c
-  PWM_COMP.c
-  Linking VisualGDB/Debug/PWM_COMP...
-  ------------------- Memory utilization report -------------------
-  Used FLASH: 1832 bytes out of 128KB (1%)
-  Used SRAM: 32 bytes out of 32KB (0%)
