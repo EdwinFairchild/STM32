@@ -1,0 +1,5 @@
+﻿  STM32G4_TFT_ST7735.c
+  Linking ../VisualGDB/Debug/STM32G4_TFT_ST7735...
+  ------------------- Memory utilization report -------------------
+  Used FLASH: 11KB out of 128KB (9%)
+  Used SRAM: 60 bytes out of 32KB (0%)
