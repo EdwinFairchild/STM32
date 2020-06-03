@@ -51,62 +51,73 @@ void printMsg_init(printMsg_config_Type config)
 
 	
 }
-#endif
-#ifdef CL_USING_G4
-void CL_printMsg_init(printMsg_config_Type config)
-{
-	
-}
+
 void CL_printMsg_init_Default(bool fullDuplex)
 {
-	//clocks
-	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
-	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
-	//gpio
-	GPIOA->MODER &= ~(GPIO_MODER_MODE9);   
-	GPIOA->MODER |= GPIO_MODER_MODE9_1; // 0b10 = AF mode
-	GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR9_1;
-	GPIOA->AFR[1] |= 0x07<<GPIO_AFRH_AFSEL9_Pos;
-	
-	
-	//uart
-	USART1->BRR = 0x5C3; // baud rate @115200
-	
-	if(fullDuplex)
+}
+#endif
+
+//***************************************************************
+//						G4 init functions
+//***************************************************************
+#ifdef CL_USING_G4
+	// initialize using custom UART
+	void CL_printMsg_init(printMsg_config_Type config)
 	{
-		GPIOA->MODER &= ~(GPIO_MODER_MODE10);   
-		GPIOA->MODER |= GPIO_MODER_MODE10_1;  // 0b10 = AF mode
-		GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR10_1;
-		GPIOA->AFR[1] |= 0x07 << GPIO_AFRH_AFSEL10_Pos;
-		USART1->CR1 |= USART_CR1_RE;
+	
 	}
 	
-	USART1->CR1 |= USART_CR1_TE | USART_CR1_UE;
+	//initialize using default UART1 on PA9 
+	void CL_printMsg_init_Default(bool fullDuplex)
+	{
+		//clocks
+		RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+		RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+		//gpio
+		GPIOA->MODER &= ~(GPIO_MODER_MODE9);   
+		GPIOA->MODER |= GPIO_MODER_MODE9_1; // 0b10 = AF mode
+		GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR9_1;
+		GPIOA->AFR[1] |= 0x07<<GPIO_AFRH_AFSEL9_Pos;	
 	
+		//uart
+		/* if over sampling by 16 then :
+		 * BRR = FPCLK / baudrate 
+		 * therefore CL_printMsg_init_Default 
+		 * must be called after all clocks have been setup 
+		 * so that SystemCoreClock has proper value
+		 */
+		USART1->BRR = (uint32_t)(SystemCoreClock / 115200);
 	
-	
-}
-
-#endif
-void CL_printMsg(char *msg, ...)
-{
-	
-	char buff[80];
-
-	
-		va_list args;
-		va_start(args,msg);
-		vsprintf(buff,msg,args);
-		
-	  for(int i = 0 ; i < strlen(buff) ; i++)
+		if(fullDuplex)
 		{
-			USART1->TDR = buff[i];
-			while( !( USART1->ISR & USART_ISR_TXE )  ) ;
-		}		
-		
-	while (!(USART1->ISR & USART_ISR_TC)) ;
+			GPIOA->MODER &= ~(GPIO_MODER_MODE10);   
+			GPIOA->MODER |= GPIO_MODER_MODE10_1;  // 0b10 = AF mode
+			GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR10_1;
+			GPIOA->AFR[1] |= 0x07 << GPIO_AFRH_AFSEL10_Pos;
+			USART1->CR1 |= USART_CR1_RE;
+		}
 	
+		USART1->CR1 |= USART_CR1_TE | USART_CR1_UE;	
+	}
 
-	
+#endif // USING G4
+
+//***************************************************************
+//						Univeral Print functions
+//***************************************************************
+void CL_printMsg(char *msg, ...)
+{	
+	char buff[80];	
+	va_list args;
+	va_start(args,msg);
+	vsprintf(buff,msg,args);
+		
+	for(int i = 0 ; i < strlen(buff) ; i++)
+	{
+		USART1->TDR = buff[i];
+		while( !( USART1->ISR & USART_ISR_TXE )  );
+	}		
+		
+	while (!(USART1->ISR & USART_ISR_TC));		
 }
 

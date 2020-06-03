@@ -66,7 +66,7 @@ uint32_t CL_delayTicks = 0x00000000;
 				TIMER->ARR = 10;
 				TIMER->PSC = 17;
 			#else
-				TIMER->PSC = 170;
+			TIMER->PSC = (SystemCoreClock / 1000000);
 				TIMER->ARR = 1000;
 			#endif
 				TIMER->CR1 |= TIM_CR1_URS;

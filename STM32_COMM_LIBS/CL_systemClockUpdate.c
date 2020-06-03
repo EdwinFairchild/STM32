@@ -33,7 +33,8 @@ void setSysClockTo170(void)
 	 * 8.Change clock source
 	 * 9. call SystemCoreClockUpdate(); 
 	 **/
-	LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_2, 85, LL_RCC_PLLR_DIV_2);
+	//LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_2, 85, LL_RCC_PLLR_DIV_2); //170
+	LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE, LL_RCC_PLLM_DIV_1, 20, LL_RCC_PLLR_DIV_2); //80
 	LL_RCC_PLL_Enable();
 	LL_RCC_PLL_EnableDomain_SYS();
 
@@ -41,6 +42,7 @@ void setSysClockTo170(void)
 	
 	LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL);
 	SystemCoreClockUpdate();
+	uint32_t temp = SystemCoreClock;
 	//volatile uint32_t temp = SystemCoreClock; //used to check changes worked
 
 #else
@@ -79,9 +81,10 @@ void setSysClockTo170(void)
 	RCC->PLLCFGR &= ~(RCC_PLLCFGR_PLLR);      	// 2	
 	RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN;      	// 3	
 	RCC->PLLCFGR &= ~(RCC_PLLCFGR_PLLM);      // 4	
-	RCC->PLLCFGR |= RCC_PLLCFGR_PLLM_0; 
+	RCC->PLLCFGR |= RCC_PLLCFGR_PLLM_0; //PLL-M div by 2 for 170 MHZ, comment out for div by 1
 	
-	RCC->PLLCFGR |= (85 << RCC_PLLCFGR_PLLN_Pos);      	// 5 
+	//85 for 170 ; 20 for 80
+	RCC->PLLCFGR |= (85 << RCC_PLLCFGR_PLLN_Pos);   // 5 
 	RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_HSE;      			//6	
 	
 	RCC->CR |= RCC_CR_PLLON;       //7
