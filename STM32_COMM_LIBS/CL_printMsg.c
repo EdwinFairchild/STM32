@@ -1,9 +1,12 @@
-#include "printMsg.h"
+#include "CL_printMsg.h"
 
-
+#ifdef CL_USING_F1
 void printMsg_init(printMsg_config_Type config)
 {
-	//enable clocks
+	/* UART2 
+	 * GPIOA A9 TX 
+	 * Alternate Function
+	 * */
 	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN; //alternate fucntion periph clock enable
 	
 	//TX pin port clock enable
@@ -27,7 +30,7 @@ void printMsg_init(printMsg_config_Type config)
 	//may add more as needed
 	
 	//configure TX pin as 50MHZ mode and Alt Function push pull cnf
-	if(config.TX_pinNumber > 7) // config pin on CR-High
+	if(config.TX_pin > 7) // config pin on CR-High
 	{
 		config.tx_port->CRH |= (1<<MODE_BIT_0_CRH) | (1<<MODE_BIT_1_CRH) | (1<<CNF_BIT_1_CRH) ;  	// mode = 11 :  cnf_1 = 1  
 		config.tx_port->CRH &= ~(1<<CNF_BIT_0_CRH);    //cnf_0 = 0
@@ -48,9 +51,44 @@ void printMsg_init(printMsg_config_Type config)
 
 	
 }
+#endif
+#ifdef CL_USING_G4
+void CL_printMsg_init(printMsg_config_Type config)
+{
+	
+}
+void CL_printMsg_init_Default(bool fullDuplex)
+{
+	//clocks
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+	//gpio
+	GPIOA->MODER &= ~(GPIO_MODER_MODE9);   
+	GPIOA->MODER |= GPIO_MODER_MODE9_1; // 0b10 = AF mode
+	GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR9_1;
+	GPIOA->AFR[1] |= 0x07<<GPIO_AFRH_AFSEL9_Pos;
+	
+	
+	//uart
+	USART1->BRR = 0x5C3; // baud rate @115200
+	
+	if(fullDuplex)
+	{
+		GPIOA->MODER &= ~(GPIO_MODER_MODE10);   
+		GPIOA->MODER |= GPIO_MODER_MODE10_1;  // 0b10 = AF mode
+		GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR10_1;
+		GPIOA->AFR[1] |= 0x07 << GPIO_AFRH_AFSEL10_Pos;
+		USART1->CR1 |= USART_CR1_RE;
+	}
+	
+	USART1->CR1 |= USART_CR1_TE | USART_CR1_UE;
+	
+	
+	
+}
 
-
-void printMsg(char *msg, ...)
+#endif
+void CL_printMsg(char *msg, ...)
 {
 	
 	char buff[80];
@@ -62,10 +100,12 @@ void printMsg(char *msg, ...)
 		
 	  for(int i = 0 ; i < strlen(buff) ; i++)
 		{
-			USART1->DR = buff[i];
-			while( !( USART1->SR & USART_SR_TXE )  ) ;
+			USART1->TDR = buff[i];
+			while( !( USART1->ISR & USART_ISR_TXE )  ) ;
 		}		
 		
+	while (!(USART1->ISR & USART_ISR_TC)) ;
+	
 
 	
 }

@@ -1,9 +1,10 @@
 #ifndef CL_delay_H_
 #define CL_delay_H_
 
+#include "CL_CONFIG.h"
 #include <stdint.h>
 
-#include "CL_CONFIG.h"
+
 
 /* Use this section to configure settings*/
 
@@ -28,7 +29,7 @@
 
 #ifdef CL_USING_F1 //--------------------------  USING F1
 
-#include "stm32f1xx.h"
+//#include "stm32f1xx.h"
 
 
 
