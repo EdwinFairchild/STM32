@@ -14,8 +14,8 @@
 		#endif
 
 	//G4 specific functions
-	void setSysClockTo170(void);
-
+void CL_setSysClockTo170(void);
+void CL_setSysClockTo80(void);
 #endif
 /***************************************************************/
 
@@ -32,7 +32,7 @@
 	#endif
 
 //f1 specific functions
-void setSysClockTo170(void);
+void setSysClockTo72(void);
 
 #endif
 /**************************************************************/

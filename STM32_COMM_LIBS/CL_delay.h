@@ -29,7 +29,7 @@
 
 #ifdef CL_USING_F1 //--------------------------  USING F1
 
-//#include "stm32f1xx.h"
+#include "stm32f1xx.h"
 
 
 

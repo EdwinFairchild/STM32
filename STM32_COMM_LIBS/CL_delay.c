@@ -145,12 +145,12 @@ uint32_t CL_delayTicks = 0x00000000;
 		TIMER->ARR = 170;
 		TIMER->PSC = 170;
 	#else
-		TIMER->PSC = 72;
+		TIMER->PSC = (SystemCoreClock / 1000000);
 		TIMER->ARR = 1000;
 	#endif
 		TIMER->CR1 |= TIM_CR1_URS;
 		TIMER->DIER |= TIM_DIER_UIE;
-		TIMER->EGR |= TIM_EGR_UG;  
+		//TIMER->EGR |= TIM_EGR_UG;  
 	}	
 	#endif //CL_delay_USE_LL
 	
@@ -183,7 +183,7 @@ uint32_t CL_delayTicks = 0x00000000;
 		TIMER->CR1 |= TIM_CR1_CEN;
 		CL_delayTicks = 0;
 		while (CL_delayTicks < (ms)) ;
-		TIMER->CR1 &= ~TIM_CR1_CEN;
+		TIMER->CR1 &= ~(TIM_CR1_CEN);
 	}
 
 #endif // end CL_DELAY_US_ENABLE
@@ -204,7 +204,7 @@ uint32_t CL_delayTicks = 0x00000000;
 #ifdef CL_DELAY_USE_TIM3
 	void TIM3_IRQHandler(void)
 	{
-		TIM3->SR &= ~TIM_SR_UIF;
+		TIM3->SR &= ~(TIM_SR_UIF);
 		CL_delayTicks++;
 	}
 #endif//CL_DELAY_USE_TIM3

@@ -1,7 +1,7 @@
 #include "CL_printMsg.h"
 
 #ifdef CL_USING_F1
-void printMsg_init(printMsg_config_Type config)
+void CL_printMsg_init(printMsg_config_Type config)
 {
 	/* UART2 
 	 * GPIOA A9 TX 
@@ -42,19 +42,43 @@ void printMsg_init(printMsg_config_Type config)
 	}
 	
 	//config USART BAUD RATE
-	// clkPer / (baudR x 16 ) = 72Mhz / (9600 x 16) //uart 2 is at 36MHZ fix this when i get a chance
-	// 468.75 = 0x1d4C 39.0625
-	config.Uart_instance->BRR = 0x271 ;  //ill figure out how to get clock freq. so that this doesnt have to be hard coded
+	// clkPer / (baudR x 16 ) = 
+	//72Mhz / (9600 x 16) = 468.75 = 0x1d4C //uart 2 is at 36MHZ fix this when i get a chance
+	// 
+	config.Uart_instance->BRR = 0x1d4C; //0x271;   //ill figure out how to get clock freq. so that this doesnt have to be hard coded
 	config.Uart_instance->CR1 |=  USART_CR1_TE;
-	config.Uart_instance->CR1 |= USART_CR1_UE;
-	
-
-	
+	config.Uart_instance->CR1 |= USART_CR1_UE;	
 }
 
 void CL_printMsg_init_Default(bool fullDuplex)
 {
+	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;  //alternate fucntion periph clock enable
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN; //gpioa
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN; //uart1
+	
+	GPIOA->CRH &= GPIO_CRH_CNF9;
+	GPIOA->CRH |= GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9;
+	
+	USART1->BRR = 0x1d4C;    //ill figure out how to get clock freq. so that this doesnt have to be hard coded
+	USART1->CR1 |=  USART_CR1_TE;
+	USART1->CR1 |= USART_CR1_UE;
 }
+void CL_printMsg(char *msg, ...)
+{	
+	char buff[80];	
+	va_list args;
+	va_start(args, msg);
+	vsprintf(buff, msg, args);
+		
+	for (int i = 0; i < strlen(buff); i++)
+	{		
+		USART1->DR = buff[i];
+		while( !( USART1->SR & USART_SR_TXE )  );
+	}		
+		
+	while (!(USART1->SR & USART_SR_TC));		
+}
+
 #endif
 
 //***************************************************************
@@ -99,25 +123,25 @@ void CL_printMsg_init_Default(bool fullDuplex)
 	
 		USART1->CR1 |= USART_CR1_TE | USART_CR1_UE;	
 	}
-
+	void CL_printMsg(char *msg, ...)
+	{	
+		char buff[80];	
+		va_list args;
+		va_start(args, msg);
+		vsprintf(buff, msg, args);
+		
+		for (int i = 0; i < strlen(buff); i++)
+		{
+		
+			USART1->TDR = buff[i];
+			while (!(USART1->ISR & USART_ISR_TXE)) ;
+		}		
+		
+		while (!(USART1->ISR & USART_ISR_TC)) ;		
+	}
 #endif // USING G4
 
 //***************************************************************
 //						Univeral Print functions
 //***************************************************************
-void CL_printMsg(char *msg, ...)
-{	
-	char buff[80];	
-	va_list args;
-	va_start(args,msg);
-	vsprintf(buff,msg,args);
-		
-	for(int i = 0 ; i < strlen(buff) ; i++)
-	{
-		USART1->TDR = buff[i];
-		while( !( USART1->ISR & USART_ISR_TXE )  );
-	}		
-		
-	while (!(USART1->ISR & USART_ISR_TC));		
-}
 
