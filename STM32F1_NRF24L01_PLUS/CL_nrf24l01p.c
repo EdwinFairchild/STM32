@@ -5,6 +5,7 @@ extern void spiSendMultiDummy(uint32_t len, uint8_t *buff);
 extern void spiSend(uint8_t  data);
 extern uint8_t spiRead(void);
 extern void spiSendMultiData(uint8_t * data, uint32_t len);
+
 extern void delayMS(uint32_t ms);
 extern void delayUS(uint32_t ms);
 extern void CL_printMsg(char *msg, ...);
@@ -15,7 +16,7 @@ uint8_t TX_ADDR_LOW_BYTE = 0x00;
 
 
 /* ______________________________________________________________ */
-void NRF_cmd_read_multi_byte_reg(uint8_t reg, uint8_t numBytes, uint8_t *buff)
+void NRF_cmd_read_multi_byte_reg(uint8_t reg, uint8_t numBytes, uint8_t *buff)//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ NOT used
 {
 	NRF_CSN_LOW();
 	
@@ -54,7 +55,7 @@ uint8_t  NRF_cmd_read_single_byte_reg(uint8_t reg)
 	return spiRead();
 }
 /* ______________________________________________________________ */
-void NRF_cmd_write_TX_ADDR(uint8_t *addr, uint8_t len)
+void NRF_cmd_write_TX_ADDR(uint8_t *addr, uint8_t len)//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ NOT used
 {
 	
 	
@@ -151,13 +152,6 @@ void NRF_cmd_write_5byte_reg(uint8_t reg, uint8_t value)
 /* ______________________________________________________________ */
 void NRF_cmd_setup_addr_width(uint8_t width) 
 {
-	/*
-	 *	00 - illegal
-	 *	01 - 3 bytes
-	 *	10 - 4 bytes
-	 *	11 - 5 bytes
-	 *	
-	 **/
 	NRF_CSN_LOW();	
 	
 	spiSend(SETUP_AW | W_REGISTER);        //write data register
@@ -176,6 +170,12 @@ void NRF_cmd_read_RX_PAYLOAD(uint8_t *data, uint8_t len)
 	
 	spiSend(R_RX_PAYLOAD);
 	NRFSTATUS = spiRead();
+	
+	//for some reason i get an empty byte at the beggning of rx payload so ill just read it here
+	//so its not included in my "len"
+	spiSend(DUMMYBYTE);
+	NRFSTATUS = spiRead();
+	
 	spiSendMultiDummy(len, data);  //check if this works or if im reading SPI DR too soon after witing to it
 	
 	NRF_CSN_HIGH();	
@@ -183,7 +183,7 @@ void NRF_cmd_read_RX_PAYLOAD(uint8_t *data, uint8_t len)
 /* ______________________________________________________________ */
 void NRF_cmd_write_TX_PAYLOAD(uint8_t *data, uint8_t len)
 {	
-	//tx_payload is a command itself doesnt need a "write operation command" W_REGISTER
+
 	NRF_CE_LOW();
 	NRF_CSN_LOW();
 	
@@ -316,19 +316,18 @@ void NRF_init_rx(CL_nrf24l01p_init_rx_type *nrf_type)
 	
 	if(nrf_type->enable_auto_ack)
 	{	
-		NRF_cmd_modify_reg(EN_AA, ENAA_P1, 1);   //enable auto ack on pipe 5	
+		NRF_cmd_modify_reg(EN_AA, ENAA_P1, 1);   //enable auto ack on pipe 1	
 		NRF_cmd_modify_reg(EN_AA, nrf_type->rx_pipe, 1); //enable auto ack on pipe 5	
 	}
 	
 	NRF_set_rx_addr(nrf_type->rx_pipe , nrf_type->tx_addr_byte_2_5, nrf_type->tx_addr_byte_1);	
 
 		
-	
-	
-	
 	NRF_cmd_write_entire_reg(NRF_STATUS, 0x70);   //clear any interrupts	
 	
 	nrfRX.listen = &NRF_cmd_listen; 
+	nrfRX.read_payload = &NRF_cmd_read_RX_PAYLOAD;
+	
 	delayMS(100);
 
 
@@ -448,4 +447,7 @@ void NRF_cmd_listen(void)
 	NRF_START_LISTENING(); 
 }
 
-
+uint8_t NRF_cmd_get_status(void)
+{
+	
+}

@@ -111,7 +111,7 @@ int main(void)
 	myNRF.crc_scheme = 0;  //1 byte
 	myNRF.enable_crc = true;
 	myNRF.tx_addr_byte_1 = 0x28;
-	myNRF.tx_addr_byte_2_5 = 0x00000000;
+	myNRF.tx_addr_byte_2_5 = 0xAABBCCDD;
 	myNRF.enable_max_rt_interrupt = true;
 	myNRF.enable_tx_ds_interrupt = true;
 	myNRF.rf_channel = 0x7B;
@@ -137,9 +137,9 @@ int main(void)
 	myRX.enable_rx_dr_interrupt = true;
 	myRX.rx_pipe = RX_PIPE_5;
 	myRX.tx_addr_byte_1 = 0x28;
-	myRX.tx_addr_byte_2_5 = 0x00000000;
+	myRX.tx_addr_byte_2_5 = 0xAABBCCDD;
 	myRX.rf_channel = 0x7B;
-	myRX.payload_width = 20;
+	myRX.payload_width = 2;
 	NRF_init_rx(&myRX);
 	
 	nrfRX.listen();
@@ -178,13 +178,15 @@ int main(void)
 				{			
 					flag = 0x00;					
 					NRF_cmd_modify_reg(NRF_STATUS, RX_DR, 1);								
-				  	NRF_cmd_read_RX_PAYLOAD(rx_data_buff, 20);
+					//NRF_cmd_read_RX_PAYLOAD(rx_data_buff, 2);
+					nrfRX.read_payload(rx_data_buff, 2);
 					NRF_cmd_FLUSH_RX();					
-					for(int i = 1 ; i < 20 ; i++)
+					for(int i = 0 ; i < myRX.payload_width ; i++)
 					{
-						CL_printMsg(" %c", rx_data_buff[i]);
+						CL_printMsg(" %d ", rx_data_buff[i]);
 						rx_data_buff[i] = 0;
 					}
+					CL_printMsg("\n____\n");
 					nrfRX.listen();					
 				}
 		#endif
@@ -199,7 +201,7 @@ void printRegister(uint8_t reg)
 	switch(reg)
 	{
 	case  NRF_STATUS : 
-		temp = NRF_cmd_read_status();
+		temp = NRF_cmd_read_single_byte_reg(reg);
 	
 		CL_printMsg("\n________________Status Register : 0x%02X________________\n" , temp);
 		CL_printMsg(" RX_DR  |  TX_DS  |  MAX_RT  |   RX_P_NO   |  TX_FULL \n");
@@ -234,32 +236,38 @@ void spiSendMultiDummy( uint32_t len , uint8_t *buff)
 	//sent to a buffer
 	__IO uint8_t *spidr = ((__IO uint8_t *)&NRF_SPI->DR);
 	uint8_t  i = 0;
-	while (len > 0)
+	//while (len+1 > 0)
+	for(int i = 0 ; i < len ; i++)
 	{
+		
 		NRF_SPI->DR = DUMMYBYTE;
-	//	while (!(NRF_SPI->SR & SPI_SR_TXE)) ;
-		buff[i++] = spiRead(); //does this work or is it too soon?
-		len--;
-		//i++;
+		while (!(NRF_SPI->SR & SPI_SR_TXE)) ;
+		buff[i] = spiRead(); 
+		//CL_printMsg("\n%d = %c", i, buff[i]);
+		//len--; 
+	//	i++;
 		while (NRF_SPI->SR & SPI_SR_BSY) ;
 				
 	}
 
 }
 /* ______________________________________________________________ */
+
 void spiSendMultiData(uint8_t * data, uint32_t len)
-{ 
-	//consider what to do with returned bytes usually when 
-	//sending data returned bytes are not needed 
+{
+
 	__IO uint8_t *spidr = ((__IO uint8_t *)&NRF_SPI->DR);
-	uint8_t  i = 0;
-	while (len > 0)
-	{		
+
+	for(uint8_t i = 0 ; i < len ; i++)
+	{	
 		NRF_SPI->DR = *data++;
-		//while (!(NRF_SPI->SR & SPI_SR_TXE)) ;
-		rx_data_buff[i++] = spiRead();
-		len--;
-		while (NRF_SPI->SR & SPI_SR_BSY) ;				
+		while (!(NRF_SPI->SR & SPI_SR_TXE)) ;
+		
+		 spiRead();
+		
+		while(NRF_SPI->SR & SPI_SR_BSY);
+
+		//data++;
 	}
 }
 /* ______________________________________________________________ */

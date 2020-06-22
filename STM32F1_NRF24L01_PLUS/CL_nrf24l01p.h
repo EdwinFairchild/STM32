@@ -107,12 +107,13 @@
 #define ERX_P1      1
 #define ERX_P0      0
 
-#define RX_PIPE_0	0
-#define RX_PIPE_1	1
-#define RX_PIPE_2	2
-#define RX_PIPE_3	3
-#define RX_PIPE_4	4
-#define RX_PIPE_5	5
+//I like this naming convention better
+#define RX_PIPE_0	ERX_P0 
+#define RX_PIPE_1	ERX_P1
+#define RX_PIPE_2	ERX_P2
+#define RX_PIPE_3	ERX_P3
+#define RX_PIPE_4	ERX_P4
+#define RX_PIPE_5	ERX_P5
 
 //-------------------------------
 #define AW          0
@@ -150,11 +151,15 @@
 #define FIVE_BYTES  0b11
 
 
-
+//generic function pointer for a function with no  return and no argumetns
 typedef   void(*fptr)(); 
-typedef   void(*tx_data_ptr)(uint8_t *data, uint8_t len); 
 
-typedef   void(*tx_set_addr_ptr)(uint32_t addr_high , uint8_t addr_low); 
+
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+
+
+
 typedef struct //user structure to setup transmitter
 {
 	bool	enable_crc;
@@ -175,6 +180,30 @@ typedef struct //user structure to setup transmitter
 
 }CL_nrf24l01p_init_tx_type;
 
+
+
+//this will be used to point to transmit payload function
+typedef  void(*tx_data_ptr)(uint8_t *data, uint8_t len); 
+
+//this will be used to point to set address function
+typedef   void(*tx_set_addr_ptr)(uint32_t addr_high , uint8_t addr_low); 
+
+
+typedef struct //user structure to control transmitter
+{
+
+	fptr clear_interrupts;
+	fptr get_status;
+	tx_set_addr_ptr set_addr;
+	tx_data_ptr transmit;
+
+}CL_nrf_tx;
+
+CL_nrf_tx nrfTX;
+
+
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
 
 
 
@@ -199,17 +228,10 @@ typedef struct //user structure to setup transmitter
 }CL_nrf24l01p_init_rx_type;
 
 
-typedef struct //user structure to control transmitter
-{
 
-	fptr clear_interrupts;
-	fptr get_status;
-	tx_set_addr_ptr set_addr;
-	tx_data_ptr transmit;
+// will use this for the read rx payload function
+typedef  void(*rx_data_ptr)(uint8_t *data, uint8_t len); 
 
-}CL_nrf_tx;
-
-CL_nrf_tx nrfTX;
 
 typedef struct //user structure to control transmitter
 {
@@ -217,11 +239,16 @@ typedef struct //user structure to control transmitter
 	fptr clear_interrupts;
 	fptr get_status;
 	tx_set_addr_ptr set_addr;
-	fptr listen;
+	fptr listen; //use generic pointer for this
+	rx_data_ptr read_payload;
+	
 }CL_nrf_rx;
 
 CL_nrf_rx nrfRX;
 
+
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
 
 uint8_t  NRF_cmd_read_single_byte_reg(uint8_t reg);
 void NRF_cmd_read_multi_byte_reg(uint8_t reg, uint8_t numBytes, uint8_t *buff);
@@ -238,6 +265,7 @@ void NRF_cmd_FLUSH_TX(void);
 void NRF_cmd_FLUSH_RX(void);
 void NRF_cmd_reuse_TX_PL(void);
 void NRF_cmd_listen(void);
+uint8_t NRF_cmd_get_status(void);
 
 void NRF_setup_rx(void);
 void NRF_setup_tx(void);
